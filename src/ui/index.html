@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>指纹浏览器管理</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Fingerprint Browser</h1>
+      <div class="header-actions">
+        <button class="btn btn-primary" id="btn-new-profile">+ 新建配置</button>
+      </div>
+    </header>
+
+    <main class="main" id="main-content">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-state-icon">&#128270;</div>
+        <h2>还没有浏览器配置</h2>
+        <p>点击"新建配置"创建你的第一个指纹浏览器实例</p>
+        <button class="btn btn-primary" id="btn-new-profile-empty">+ 新建配置</button>
+      </div>
+      <div class="profile-list" id="profile-list"></div>
+    </main>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">新建配置</h2>
+        <button class="btn-icon" id="btn-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-id">
+
+        <div class="section-title">基本信息</div>
+        <div class="form-group">
+          <label class="form-label">配置名称</label>
+          <input class="form-input" id="input-name" placeholder="例如：工作账号">
+        </div>
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="input-notes" placeholder="可选备注"></textarea>
+        </div>
+
+        <div class="section-title">操作系统预设</div>
+        <div class="form-group">
+          <label class="form-label">平台</label>
+          <select class="form-select" id="select-platform">
+            <option value="0">Windows Desktop</option>
+            <option value="1">macOS Desktop</option>
+            <option value="2">Linux Desktop</option>
+          </select>
+        </div>
+
+        <div class="section-title">指纹参数</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">User-Agent</label>
+            <input class="form-input" id="input-ua" placeholder="自动生成">
+          </div>
+          <div class="form-group">
+            <label class="form-label">语言</label>
+            <input class="form-input" id="input-lang" placeholder="zh-CN">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">屏幕分辨率</label>
+            <input class="form-input" id="input-resolution" placeholder="1920x1080">
+          </div>
+          <div class="form-group">
+            <label class="form-label">时区</label>
+            <input class="form-input" id="input-timezone" placeholder="Asia/Shanghai">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">CPU 核心数</label>
+            <select class="form-select" id="select-cores">
+              <option value="4">4</option>
+              <option value="8" selected>8</option>
+              <option value="12">12</option>
+              <option value="16">16</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">内存 (GB)</label>
+            <select class="form-select" id="select-memory">
+              <option value="4">4</option>
+              <option value="8" selected>8</option>
+              <option value="16">16</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">WebGL 厂商</label>
+            <input class="form-input" id="input-webgl-vendor" placeholder="自动生成">
+          </div>
+          <div class="form-group">
+            <label class="form-label">WebGL 渲染器</label>
+            <input class="form-input" id="input-webgl-renderer" placeholder="自动生成">
+          </div>
+        </div>
+
+        <div class="section-title">WebRTC 防护</div>
+        <div class="form-group">
+          <select class="form-select" id="select-webrtc">
+            <option value="disable_non_proxied_udp">限制（过滤私有IP）</option>
+            <option value="disabled">完全禁用</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:16px">
+          <button class="btn btn-secondary" id="btn-randomize" style="width:100%">&#127922; 随机生成全部指纹</button>
+          <div class="form-hint">基于选定的平台预设随机生成一致的指纹参数</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel">取消</button>
+        <button class="btn btn-primary" id="btn-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

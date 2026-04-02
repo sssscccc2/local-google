@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fingerprint Browser</title>
+  <link rel="stylesheet" href="browser-shell.css">
+</head>
+<body>
+  <div class="shell">
+    <div class="toolbar">
+      <button class="nav-btn" id="btn-back" title="后退">&#9664;</button>
+      <button class="nav-btn" id="btn-forward" title="前进">&#9654;</button>
+      <button class="nav-btn" id="btn-reload" title="刷新">&#8635;</button>
+      <span class="ssl-indicator" id="ssl-indicator"></span>
+      <input class="url-bar" id="url-bar" type="text" value="https://www.google.com" spellcheck="false">
+    </div>
+    <div class="loading-bar" id="loading-bar"></div>
+    <webview id="browser" allowpopups></webview>
+  </div>
+  <script src="browser-shell.js"></script>
+</body>
+</html>
