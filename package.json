@@ -1,11 +1,11 @@
 {
   "name": "local-fingerprint-browser",
   "version": "1.0.0",
-  "description": "基于 Electron 的本地指纹浏览器",
+  "description": "基于本机 Chrome 的指纹浏览器管理器",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "build": "electron-builder --win",
     "download-ext": "node scripts/download-extension.js"
   },
   "dependencies": {
@@ -15,5 +15,41 @@
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.fingerprint.browser",
+    "productName": "指纹浏览器",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": null
+    },
+    "portable": {
+      "artifactName": "指纹浏览器.exe"
+    },
+    "files": [
+      "src/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "extensions",
+        "to": "extensions",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "src/extension-template",
+        "to": "extension-template",
+        "filter": ["**/*"]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
   }
 }

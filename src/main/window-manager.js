@@ -3,9 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { ChromeLauncher } = require('./chrome-launcher');
 const { ExtensionBuilder } = require('./extension-builder');
-
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const EXTENSIONS_DIR = path.join(__dirname, '..', '..', 'extensions');
+const { DATA_DIR, EXTENSIONS_DIR } = require('./paths');
 
 class WindowManager {
   constructor(profileManager) {

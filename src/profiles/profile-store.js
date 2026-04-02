@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { DATA_DIR } = require('../main/paths');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const STORE_PATH = path.join(DATA_DIR, 'profiles.json');
 
 class ProfileStore {

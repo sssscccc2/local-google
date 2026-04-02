@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const TEMPLATE_DIR = path.join(__dirname, '..', 'extension-template');
+const { TEMPLATE_DIR } = require('./paths');
 
 class ExtensionBuilder {
   static build(targetDir, fingerprint) {
