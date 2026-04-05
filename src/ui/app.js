@@ -32,6 +32,8 @@ function bindEvents() {
     if (e.target === $('#modal-overlay')) closeModal();
   });
 
+  $('#select-proxy-node').addEventListener('change', updateRelayModeVisibility);
+
   $('#btn-manage-nodes').addEventListener('click', openNodeModal);
   $('#btn-node-modal-close').addEventListener('click', closeNodeModal);
   $('#node-modal-overlay').addEventListener('click', (e) => {
@@ -93,10 +95,11 @@ function renderProfiles() {
 
     const nodeId = p.proxyNodeId;
     const nodeInfo = nodeId ? nodesList.find((n) => n.id === nodeId) : null;
+    const relayTag = p.relayMode === 'server' ? ' [中转]' : '';
     const proxyLabel = nodeInfo
-      ? `${nodeInfo.type.toUpperCase()} ${nodeInfo.name}`
+      ? `${nodeInfo.type.toUpperCase()} ${nodeInfo.name}${relayTag}`
       : '直连';
-    const proxyTag = nodeInfo ? 'proxy' : 'direct';
+    const proxyTag = nodeInfo ? (p.relayMode === 'server' ? 'relay' : 'proxy') : 'direct';
 
     return `
       <div class="profile-card" data-id="${p.id}">
@@ -191,6 +194,8 @@ function resetForm() {
   $('#input-webgl-renderer').value = '';
   $('#edit-id').value = '';
   $('#select-proxy-node').value = '';
+  $('#select-relay-mode').value = 'local';
+  updateRelayModeVisibility();
 }
 
 async function fillRandom() {
@@ -234,6 +239,8 @@ async function fillFormFromProfile(profile) {
     populateFormFromFingerprint(profile.fingerprint);
   }
   $('#select-proxy-node').value = profile.proxyNodeId || '';
+  $('#select-relay-mode').value = profile.relayMode || 'local';
+  updateRelayModeVisibility();
 }
 
 function buildFingerprintFromForm() {
@@ -326,6 +333,7 @@ async function handleSave() {
 
   const fingerprint = buildFingerprintFromForm();
   const proxyNodeId = $('#select-proxy-node').value || null;
+  const relayMode = proxyNodeId ? ($('#select-relay-mode').value || 'local') : 'local';
   const editId = $('#edit-id').value;
 
   try {
@@ -334,6 +342,7 @@ async function handleSave() {
         name,
         notes: $('#input-notes').value,
         proxyNodeId,
+        relayMode,
         fingerprint,
       });
       showToast('配置已更新', 'success');
@@ -342,6 +351,7 @@ async function handleSave() {
         name,
         notes: $('#input-notes').value,
         proxyNodeId,
+        relayMode,
         fingerprint,
       });
       showToast('配置已创建', 'success');
@@ -378,6 +388,17 @@ async function handleDelete(id) {
     await refreshList();
   } catch (err) {
     showToast(err.message || '删除失败', 'error');
+  }
+}
+
+function updateRelayModeVisibility() {
+  const group = $('#relay-mode-group');
+  const nodeVal = $('#select-proxy-node').value;
+  if (nodeVal) {
+    group.style.display = 'block';
+  } else {
+    group.style.display = 'none';
+    $('#select-relay-mode').value = 'local';
   }
 }
 

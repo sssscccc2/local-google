@@ -81,6 +81,49 @@ class AuthClient {
     }
   }
 
+  static async relayStart(relayId, node) {
+    const token = AuthClient._loadToken();
+    if (!token) throw new Error('未登录');
+    const res = await AuthClient._requestWithAuth('/api/relay/start', { relayId, node }, token);
+    if (res.status === 200) return { host: AUTH_SERVER.replace('http://', '').split(':')[0], port: res.data.port };
+    throw new Error(res.data.error || '中转启动失败');
+  }
+
+  static async relayStop(relayId) {
+    const token = AuthClient._loadToken();
+    if (!token) return;
+    try {
+      await AuthClient._requestWithAuth('/api/relay/stop', { relayId }, token);
+    } catch (_) {}
+  }
+
+  static _requestWithAuth(endpoint, body, token) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(endpoint, AUTH_SERVER);
+      const data = JSON.stringify(body);
+      const req = http.request(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+          'Authorization': 'Bearer ' + token,
+        },
+        timeout: 15000,
+      }, (res) => {
+        let raw = '';
+        res.on('data', (c) => { raw += c; });
+        res.on('end', () => {
+          try { resolve({ status: res.statusCode, data: JSON.parse(raw) }); }
+          catch { reject(new Error('Invalid server response')); }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('Connection timeout')); });
+      req.write(data);
+      req.end();
+    });
+  }
+
   static logout() {
     try {
       if (fs.existsSync(TOKEN_FILE)) fs.unlinkSync(TOKEN_FILE);

@@ -58,6 +58,9 @@ function startMainApp() {
   });
   ipcMain.handle('node:remove', (_e, id) => nodeStore.remove(id));
   ipcMain.handle('node:clear', () => nodeStore.clear());
+
+  ipcMain.handle('relay:start', (_e, relayId, node) => AuthClient.relayStart(relayId, node));
+  ipcMain.handle('relay:stop', (_e, relayId) => AuthClient.relayStop(relayId));
 }
 
 app.whenReady().then(async () => {
@@ -83,7 +86,15 @@ app.whenReady().then(async () => {
   }
 });
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
   SingBoxManager.stopAll();
+  if (profileManager) {
+    const profiles = profileManager.listProfiles();
+    for (const p of profiles) {
+      if (p.proxyNodeId && p.relayMode === 'server') {
+        try { await AuthClient.relayStop(p.id); } catch (_) {}
+      }
+    }
+  }
   if (process.platform !== 'darwin') app.quit();
 });

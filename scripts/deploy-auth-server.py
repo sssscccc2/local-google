@@ -10,11 +10,17 @@ const http = require('http');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
+const { spawn } = require('child_process');
+const net = require('net');
 
 const DATA_DIR = '/opt/fp-browser-auth';
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+const SINGBOX_BIN = '/usr/local/bin/sing-box';
+const RELAY_DIR = path.join(DATA_DIR, 'relays');
 const PORT = 3000;
+
+const activeRelays = new Map();
 
 function ensureFiles() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -80,6 +86,75 @@ const hasAdmin = users.find(u => u.username === 'sunchao');
 if (!hasAdmin) {
   users.push({ username: 'sunchao', password: hashPwd('sunchao250'), role: 'admin', enabled: true, createdAt: Date.now() });
   saveUsers(users);
+}
+
+// --- Relay Management ---
+fs.mkdirSync(RELAY_DIR, { recursive: true });
+
+function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.listen(0, '0.0.0.0', () => {
+      const port = srv.address().port;
+      srv.close(() => resolve(port));
+    });
+    srv.on('error', reject);
+  });
+}
+
+function buildRelayConfig(node, localPort) {
+  const outbound = { tag: 'proxy', type: node.type, server: node.server, server_port: node.server_port };
+  if (node.type === 'socks') {
+    if (node.username) { outbound.username = node.username; outbound.password = node.password || ''; }
+  } else if (node.type === 'vmess') {
+    outbound.uuid = node.uuid; outbound.alter_id = node.alter_id || 0; outbound.security = node.security || 'auto';
+  } else if (node.type === 'vless') {
+    outbound.uuid = node.uuid; outbound.flow = node.flow || '';
+  } else if (node.type === 'shadowsocks') {
+    outbound.method = node.method; outbound.password = node.password;
+  } else if (node.type === 'trojan') {
+    outbound.password = node.password;
+  } else if (node.type === 'http') {
+    if (node.username) { outbound.username = node.username; outbound.password = node.password || ''; }
+  }
+  if (node.tls && node.tls.enabled) {
+    outbound.tls = { enabled: true, server_name: node.tls.server_name || node.server, insecure: false };
+    if (node.tls.reality && node.tls.reality.enabled) {
+      outbound.tls.reality = { enabled: true, public_key: node.tls.reality.public_key, short_id: node.tls.reality.short_id };
+    }
+  }
+  if (node.transport) outbound.transport = { ...node.transport };
+  return {
+    log: { level: 'warn', timestamp: true },
+    inbounds: [{ type: 'socks', tag: 'socks-in', listen: '0.0.0.0', listen_port: localPort }],
+    outbounds: [outbound, { type: 'direct', tag: 'direct' }]
+  };
+}
+
+async function startRelay(relayId, node) {
+  await stopRelay(relayId);
+  const port = await findFreePort();
+  const config = buildRelayConfig(node, port);
+  const configPath = path.join(RELAY_DIR, relayId + '.json');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  const child = spawn(SINGBOX_BIN, ['run', '-c', configPath], { stdio: ['ignore', 'pipe', 'pipe'], detached: false });
+  let started = false;
+  return new Promise((resolve, reject) => {
+    const onData = d => { const t = d.toString(); if (!started && (t.includes('started') || t.includes('socks-in'))) { started = true; activeRelays.set(relayId, { process: child, port, configPath }); resolve(port); } };
+    child.stdout.on('data', onData);
+    child.stderr.on('data', onData);
+    child.on('error', e => { if (!started) reject(e); });
+    child.on('exit', code => { activeRelays.delete(relayId); if (!started) reject(new Error('sing-box exited: ' + code)); });
+    setTimeout(() => { if (!started && child.exitCode === null) { started = true; activeRelays.set(relayId, { process: child, port, configPath }); resolve(port); } }, 3000);
+  });
+}
+
+async function stopRelay(relayId) {
+  const entry = activeRelays.get(relayId);
+  if (!entry) return;
+  try { entry.process.kill(); } catch {}
+  activeRelays.delete(relayId);
+  try { if (fs.existsSync(entry.configPath)) fs.unlinkSync(entry.configPath); } catch {}
 }
 
 const ADMIN_HTML = `ADMIN_HTML_PLACEHOLDER`;
@@ -190,6 +265,32 @@ const server = http.createServer(async (req, res) => {
       u.password = hashPwd(newPassword);
       saveUsers(users);
       return json(res, 200, { message: '密码已重置' });
+    }
+
+    return json(res, 404, { error: 'Not found' });
+  }
+
+  // --- Relay API (requires valid token) ---
+  if (url.startsWith('/api/relay/')) {
+    const sess = getSessionUser(req);
+    if (!sess) return json(res, 401, { error: '需要登录' });
+
+    if (url === '/api/relay/start' && req.method === 'POST') {
+      const { relayId, node } = await parseBody(req);
+      if (!relayId || !node || !node.server) return json(res, 400, { error: '参数不完整' });
+      try {
+        const port = await startRelay(relayId, node);
+        return json(res, 200, { port, host: '0.0.0.0' });
+      } catch (e) {
+        return json(res, 500, { error: '中转启动失败: ' + (e.message || e) });
+      }
+    }
+
+    if (url === '/api/relay/stop' && req.method === 'POST') {
+      const { relayId } = await parseBody(req);
+      if (!relayId) return json(res, 400, { error: 'Missing relayId' });
+      await stopRelay(relayId);
+      return json(res, 200, { stopped: relayId });
     }
 
     return json(res, 404, { error: 'Not found' });
@@ -470,6 +571,20 @@ def main():
         run(ssh, 'curl -fsSL https://deb.nodesource.com/setup_20.x | bash -')
         run(ssh, 'apt-get install -y nodejs')
 
+    # Install sing-box on server if not present
+    out, code = run(ssh, 'sing-box version', check=False)
+    if code != 0:
+        print('Installing sing-box on server...')
+        run(ssh, 'curl -Lo /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.13.3/sing-box-1.13.3-linux-amd64.tar.gz')
+        run(ssh, 'tar -xzf /tmp/sing-box.tar.gz -C /tmp/')
+        run(ssh, 'cp /tmp/sing-box-1.13.3-linux-amd64/sing-box /usr/local/bin/sing-box')
+        run(ssh, 'chmod +x /usr/local/bin/sing-box')
+        run(ssh, 'rm -rf /tmp/sing-box*')
+        out2, _ = run(ssh, 'sing-box version', check=False)
+        print(f'  sing-box installed: {out2[:80]}')
+    else:
+        print(f'  sing-box already installed: {out[:80]}')
+
     # Build final server.js with embedded HTML
     final_code = SERVER_CODE.replace('ADMIN_HTML_PLACEHOLDER', ADMIN_HTML.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${'))
 
@@ -531,8 +646,9 @@ WantedBy=multi-user.target'''
     out, _ = run(ssh, 'curl -s http://127.0.0.1:3000/api/ping')
     print(f'Ping: {out}')
 
-    # Open firewall for port 3000 if ufw is active
+    # Open firewall for port 3000 and relay ports (10000-65000)
     run(ssh, 'ufw allow 3000/tcp 2>/dev/null || true', check=False)
+    run(ssh, 'ufw allow 10000:65000/tcp 2>/dev/null || true', check=False)
 
     ssh.close()
     print(f'\nDone! Admin panel: http://{HOST}:3000/admin')

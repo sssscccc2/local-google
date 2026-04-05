@@ -4,6 +4,7 @@ const fs = require('fs');
 const { ChromeLauncher } = require('./chrome-launcher');
 const { ExtensionBuilder } = require('./extension-builder');
 const { SingBoxManager } = require('./singbox-manager');
+const { AuthClient } = require('./auth-client');
 const { DATA_DIR, EXTENSIONS_DIR } = require('./paths');
 
 class WindowManager {
@@ -44,9 +45,16 @@ class WindowManager {
     if (profile.proxyNodeId && this.nodeStore) {
       const node = this.nodeStore.get(profile.proxyNodeId);
       if (node) {
-        const localPort = await SingBoxManager.start(profileId, node);
-        proxyForChrome = { type: 'socks5', host: '127.0.0.1', port: localPort };
-        console.log(`[SingBox] Profile ${profileId} -> socks5://127.0.0.1:${localPort}`);
+        const relayMode = profile.relayMode || 'local';
+        if (relayMode === 'server') {
+          const relay = await AuthClient.relayStart(profileId, node);
+          proxyForChrome = { type: 'socks5', host: relay.host, port: relay.port };
+          console.log(`[Relay] Profile ${profileId} -> socks5://${relay.host}:${relay.port} (server relay)`);
+        } else {
+          const localPort = await SingBoxManager.start(profileId, node);
+          proxyForChrome = { type: 'socks5', host: '127.0.0.1', port: localPort };
+          console.log(`[SingBox] Profile ${profileId} -> socks5://127.0.0.1:${localPort} (local)`);
+        }
       }
     }
 

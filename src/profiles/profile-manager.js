@@ -20,6 +20,7 @@ class ProfileManager {
       platform: profile.fingerprint?.navigator?.platform || 'Unknown',
       userAgent: profile.fingerprint?.userAgent || '',
       proxyNodeId: profile.proxyNodeId || null,
+      relayMode: profile.relayMode || 'local',
     }));
   }
 
@@ -37,6 +38,7 @@ class ProfileManager {
       lastUsed: null,
       notes: data.notes || '',
       proxyNodeId: data.proxyNodeId || null,
+      relayMode: data.relayMode || 'local',
       fingerprint,
     };
 

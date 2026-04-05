@@ -431,6 +431,11 @@ body {
   color: #6ee7b7;
 }
 
+.tag-relay {
+  background: #3a2a1a;
+  color: #fbbf24;
+}
+
 .input-with-btn {
   display: flex;
   gap: 8px;

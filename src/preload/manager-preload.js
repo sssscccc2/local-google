@@ -15,4 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   importNodes: (text) => ipcRenderer.invoke('node:import', text),
   removeNode: (id) => ipcRenderer.invoke('node:remove', id),
   clearNodes: () => ipcRenderer.invoke('node:clear'),
+
+  relayStart: (relayId, node) => ipcRenderer.invoke('relay:start', relayId, node),
+  relayStop: (relayId) => ipcRenderer.invoke('relay:stop', relayId),
 });
