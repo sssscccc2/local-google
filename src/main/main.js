@@ -62,6 +62,7 @@ function startMainApp() {
 
 app.whenReady().then(async () => {
   ipcMain.handle('auth:ping', () => AuthClient.ping());
+  ipcMain.handle('auth:register', (_e, username, password) => AuthClient.register(username, password));
   ipcMain.handle('auth:login', async (_e, username, password) => {
     const result = await AuthClient.login(username, password);
     if (result.success) {

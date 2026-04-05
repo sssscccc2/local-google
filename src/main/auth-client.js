@@ -48,6 +48,18 @@ class AuthClient {
     }
   }
 
+  static async register(username, password) {
+    try {
+      const res = await AuthClient._request('/api/register', { username, password });
+      if (res.status === 200) {
+        return { success: true };
+      }
+      return { success: false, error: res.data.error || '注册失败' };
+    } catch {
+      return { success: false, error: '无法连接认证服务器' };
+    }
+  }
+
   static async verify() {
     const token = AuthClient._loadToken();
     if (!token) return false;

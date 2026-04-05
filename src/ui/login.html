@@ -15,6 +15,7 @@
       --accent: #6366f1;
       --accent-hover: #818cf8;
       --danger: #ef4444;
+      --success: #22c55e;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,102 +45,51 @@
       margin-bottom: 32px;
     }
 
-    .login-logo {
-      font-size: 36px;
-      margin-bottom: 12px;
-    }
+    .login-logo { font-size: 36px; margin-bottom: 12px; }
+    .login-header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+    .login-header p { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
 
-    .login-header h1 {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-    }
-
-    .login-header p {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 6px;
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 6px;
-      color: var(--text-secondary);
-    }
-
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-secondary); }
     .form-input {
-      width: 100%;
-      padding: 11px 14px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text-primary);
-      font-size: 14px;
-      font-family: inherit;
-      transition: border-color 0.15s;
-      outline: none;
+      width: 100%; padding: 11px 14px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-primary); font-size: 14px; font-family: inherit;
+      transition: border-color 0.15s; outline: none;
     }
+    .form-input:focus { border-color: var(--accent); }
 
-    .form-input:focus {
-      border-color: var(--accent);
+    .btn-action {
+      width: 100%; padding: 12px; color: white; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background 0.15s; margin-top: 8px;
     }
+    .btn-action.login-btn { background: var(--accent); }
+    .btn-action.login-btn:hover { background: var(--accent-hover); }
+    .btn-action.register-btn { background: var(--success); }
+    .btn-action.register-btn:hover { background: #16a34a; }
+    .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn-login {
-      width: 100%;
-      padding: 12px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-      margin-top: 8px;
+    .msg-box {
+      display: none; margin-top: 14px; padding: 10px 14px;
+      border-radius: 8px; font-size: 13px; text-align: center;
     }
+    .msg-box.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+    .msg-box.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--success); }
+    .msg-box.visible { display: block; }
 
-    .btn-login:hover {
-      background: var(--accent-hover);
+    .switch-link {
+      text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-secondary);
     }
+    .switch-link a {
+      color: var(--accent); cursor: pointer; text-decoration: none;
+    }
+    .switch-link a:hover { text-decoration: underline; }
 
-    .btn-login:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    .status-bar { text-align: center; margin-top: 12px; font-size: 11px; color: var(--text-secondary); }
+    .status-bar.connecting { color: #f59e0b; }
 
-    .error-msg {
-      display: none;
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: var(--danger);
-      font-size: 13px;
-      text-align: center;
-    }
-
-    .error-msg.visible {
-      display: block;
-    }
-
-    .status-bar {
-      text-align: center;
-      margin-top: 16px;
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .status-bar.connecting {
-      color: #f59e0b;
-    }
+    .page { display: none; }
+    .page.active { display: block; }
   </style>
 </head>
 <body>
@@ -147,77 +97,137 @@
     <div class="login-header">
       <div class="login-logo">&#128274;</div>
       <h1>Fingerprint Browser</h1>
-      <p>请登录以继续使用</p>
+      <p id="header-desc">请登录以继续使用</p>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">用户名</label>
-      <input class="form-input" id="input-username" type="text" placeholder="请输入用户名" autofocus>
+    <!-- Login Page -->
+    <div class="page active" id="page-login">
+      <div class="form-group">
+        <label class="form-label">用户名</label>
+        <input class="form-input" id="login-username" type="text" placeholder="请输入用户名" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input class="form-input" id="login-password" type="password" placeholder="请输入密码">
+      </div>
+      <button class="btn-action login-btn" id="btn-login">登 录</button>
+      <div class="msg-box" id="login-msg"></div>
+      <div class="switch-link">还没有账号？<a id="link-to-register">立即注册</a></div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">密码</label>
-      <input class="form-input" id="input-password" type="password" placeholder="请输入密码">
+    <!-- Register Page -->
+    <div class="page" id="page-register">
+      <div class="form-group">
+        <label class="form-label">用户名（字母数字下划线，2-30位）</label>
+        <input class="form-input" id="reg-username" type="text" placeholder="请输入用户名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码（至少4位）</label>
+        <input class="form-input" id="reg-password" type="password" placeholder="请输入密码">
+      </div>
+      <div class="form-group">
+        <label class="form-label">确认密码</label>
+        <input class="form-input" id="reg-password2" type="password" placeholder="再次输入密码">
+      </div>
+      <button class="btn-action register-btn" id="btn-register">注 册</button>
+      <div class="msg-box" id="reg-msg"></div>
+      <div class="switch-link">已有账号？<a id="link-to-login">返回登录</a></div>
     </div>
 
-    <button class="btn-login" id="btn-login">登 录</button>
-
-    <div class="error-msg" id="error-msg"></div>
     <div class="status-bar" id="status-bar">服务器: 在线</div>
   </div>
 
   <script>
     const $ = (sel) => document.querySelector(sel);
 
-    async function handleLogin() {
-      const username = $('#input-username').value.trim();
-      const password = $('#input-password').value;
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      $(`#page-${name}`).classList.add('active');
+      $('#header-desc').textContent = name === 'login' ? '请登录以继续使用' : '注册新账号';
+      hideMsgs();
+    }
 
-      if (!username || !password) {
-        showError('请输入用户名和密码');
-        return;
-      }
+    function showMsg(id, msg, type) {
+      const el = $(id);
+      el.textContent = msg;
+      el.className = `msg-box ${type} visible`;
+    }
+
+    function hideMsgs() {
+      document.querySelectorAll('.msg-box').forEach(m => { m.classList.remove('visible'); });
+    }
+
+    // Login
+    async function handleLogin() {
+      const username = $('#login-username').value.trim();
+      const password = $('#login-password').value;
+      if (!username || !password) { showMsg('#login-msg', '请输入用户名和密码', 'error'); return; }
 
       const btn = $('#btn-login');
       btn.disabled = true;
       btn.textContent = '登录中...';
-      hideError();
+      hideMsgs();
 
       try {
         const result = await window.authApi.login(username, password);
         if (result.success) {
           btn.textContent = '登录成功，正在加载...';
         } else {
-          showError(result.error || '登录失败');
+          showMsg('#login-msg', result.error || '登录失败', 'error');
           btn.disabled = false;
           btn.textContent = '登 录';
         }
-      } catch (err) {
-        showError('连接服务器失败，请检查网络');
+      } catch {
+        showMsg('#login-msg', '连接服务器失败，请检查网络', 'error');
         btn.disabled = false;
         btn.textContent = '登 录';
       }
     }
 
-    function showError(msg) {
-      const el = $('#error-msg');
-      el.textContent = msg;
-      el.classList.add('visible');
-    }
+    // Register
+    async function handleRegister() {
+      const username = $('#reg-username').value.trim();
+      const password = $('#reg-password').value;
+      const password2 = $('#reg-password2').value;
 
-    function hideError() {
-      $('#error-msg').classList.remove('visible');
+      if (!username || !password) { showMsg('#reg-msg', '请填写所有字段', 'error'); return; }
+      if (password !== password2) { showMsg('#reg-msg', '两次密码不一致', 'error'); return; }
+      if (password.length < 4) { showMsg('#reg-msg', '密码至少 4 位', 'error'); return; }
+
+      const btn = $('#btn-register');
+      btn.disabled = true;
+      btn.textContent = '注册中...';
+      hideMsgs();
+
+      try {
+        const result = await window.authApi.register(username, password);
+        if (result.success) {
+          showMsg('#reg-msg', '注册成功！请返回登录', 'success');
+          btn.textContent = '注 册';
+          btn.disabled = false;
+          $('#reg-username').value = '';
+          $('#reg-password').value = '';
+          $('#reg-password2').value = '';
+        } else {
+          showMsg('#reg-msg', result.error || '注册失败', 'error');
+          btn.disabled = false;
+          btn.textContent = '注 册';
+        }
+      } catch {
+        showMsg('#reg-msg', '连接服务器失败', 'error');
+        btn.disabled = false;
+        btn.textContent = '注 册';
+      }
     }
 
     $('#btn-login').addEventListener('click', handleLogin);
+    $('#btn-register').addEventListener('click', handleRegister);
+    $('#link-to-register').addEventListener('click', () => showPage('register'));
+    $('#link-to-login').addEventListener('click', () => showPage('login'));
 
-    $('#input-password').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleLogin();
-    });
-
-    $('#input-username').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') $('#input-password').focus();
-    });
+    $('#login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+    $('#login-username').addEventListener('keydown', e => { if (e.key === 'Enter') $('#login-password').focus(); });
+    $('#reg-password2').addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
 
     (async () => {
       const bar = $('#status-bar');
