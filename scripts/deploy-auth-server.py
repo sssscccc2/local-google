@@ -209,7 +209,7 @@ ADMIN_HTML = r'''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>管理后台 - 指纹浏览器</title>
+<title>管理后台 - 天道酬勤麻将机</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#0f0f11;color:#e8e8ed;min-height:100vh}

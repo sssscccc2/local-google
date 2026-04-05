@@ -19,7 +19,7 @@ function createLoginWindow() {
     height: 520,
     resizable: false,
     frame: false,
-    title: '登录 - 指纹浏览器',
+    title: '登录 - 天道酬勤麻将机',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'login-preload.js'),
       contextIsolation: true,

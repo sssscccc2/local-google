@@ -1,7 +1,7 @@
 {
-  "name": "local-fingerprint-browser",
+  "name": "tiandaochouqin-mahjong",
   "version": "1.0.0",
-  "description": "基于本机 Chrome 的指纹浏览器管理器",
+  "description": "天道酬勤麻将机",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "com.fingerprint.browser",
-    "productName": "指纹浏览器",
+    "productName": "天道酬勤麻将机",
     "win": {
       "target": [
         {
@@ -30,7 +30,7 @@
       "icon": null
     },
     "portable": {
-      "artifactName": "指纹浏览器.exe"
+      "artifactName": "天道酬勤麻将机.exe"
     },
     "files": [
       "src/**/*",

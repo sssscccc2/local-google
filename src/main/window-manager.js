@@ -16,7 +16,7 @@ class WindowManager {
     const win = new BrowserWindow({
       width: 1000,
       height: 700,
-      title: '指纹浏览器管理',
+      title: '天道酬勤麻将机',
       webPreferences: {
         preload: path.join(__dirname, '..', 'preload', 'manager-preload.js'),
         contextIsolation: true,
