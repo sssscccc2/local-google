@@ -1,16 +1,35 @@
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, BrowserWindow } = require('electron');
+const path = require('path');
 const { WindowManager } = require('./window-manager');
 const { ProfileManager } = require('../profiles/profile-manager');
 const { FingerprintGenerator } = require('../fingerprint/generator');
 const { NodeStore } = require('./node-store');
 const { ProxyUrlParser } = require('./proxy-url-parser');
 const { SingBoxManager } = require('./singbox-manager');
+const { AuthClient } = require('./auth-client');
 
 let windowManager;
 let profileManager;
 let nodeStore;
+let loginWindow;
 
-app.whenReady().then(() => {
+function createLoginWindow() {
+  loginWindow = new BrowserWindow({
+    width: 420,
+    height: 520,
+    resizable: false,
+    frame: false,
+    title: '登录 - 指纹浏览器',
+    webPreferences: {
+      preload: path.join(__dirname, '..', 'preload', 'login-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  loginWindow.loadFile(path.join(__dirname, '..', 'ui', 'login.html'));
+}
+
+function startMainApp() {
   profileManager = new ProfileManager();
   nodeStore = new NodeStore();
   windowManager = new WindowManager(profileManager, nodeStore);
@@ -39,6 +58,28 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('node:remove', (_e, id) => nodeStore.remove(id));
   ipcMain.handle('node:clear', () => nodeStore.clear());
+}
+
+app.whenReady().then(async () => {
+  ipcMain.handle('auth:ping', () => AuthClient.ping());
+  ipcMain.handle('auth:login', async (_e, username, password) => {
+    const result = await AuthClient.login(username, password);
+    if (result.success) {
+      if (loginWindow) {
+        loginWindow.close();
+        loginWindow = null;
+      }
+      startMainApp();
+    }
+    return result;
+  });
+
+  const isValid = await AuthClient.verify();
+  if (isValid) {
+    startMainApp();
+  } else {
+    createLoginWindow();
+  }
 });
 
 app.on('window-all-closed', () => {
