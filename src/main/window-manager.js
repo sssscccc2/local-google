@@ -3,11 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const { ChromeLauncher } = require('./chrome-launcher');
 const { ExtensionBuilder } = require('./extension-builder');
+const { SingBoxManager } = require('./singbox-manager');
 const { DATA_DIR, EXTENSIONS_DIR } = require('./paths');
 
 class WindowManager {
-  constructor(profileManager) {
+  constructor(profileManager, nodeStore) {
     this.profileManager = profileManager;
+    this.nodeStore = nodeStore;
   }
 
   createManagerWindow() {
@@ -37,16 +39,27 @@ class WindowManager {
 
     fs.mkdirSync(chromeDataDir, { recursive: true });
 
-    ExtensionBuilder.build(fpExtDir, fp);
+    let proxyForChrome = null;
+
+    if (profile.proxyNodeId && this.nodeStore) {
+      const node = this.nodeStore.get(profile.proxyNodeId);
+      if (node) {
+        const localPort = await SingBoxManager.start(profileId, node);
+        proxyForChrome = { type: 'socks5', host: '127.0.0.1', port: localPort };
+        console.log(`[SingBox] Profile ${profileId} -> socks5://127.0.0.1:${localPort}`);
+      }
+    }
+
+    ExtensionBuilder.build(fpExtDir, fp, proxyForChrome);
 
     const extensions = [fpExtDir];
-
     const extEntries = getAvailableExtensions();
     extensions.push(...extEntries);
 
-    const result = ChromeLauncher.launch({
+    const result = await ChromeLauncher.launch({
       userDataDir: chromeDataDir,
       extensions,
+      proxy: proxyForChrome,
       windowSize: fp.screen ? { width: fp.screen.width, height: fp.screen.height } : null,
       lang: fp.navigator ? fp.navigator.language : null,
       startUrl: 'https://www.google.com',

@@ -18,6 +18,10 @@ const TEMPLATE_DIR = isPacked
   ? path.join(RESOURCES, 'extension-template')
   : path.join(__dirname, '..', 'extension-template');
 
+const SINGBOX_PATH = isPacked
+  ? path.join(RESOURCES, 'bin', 'sing-box.exe')
+  : path.join(APP_ROOT, 'bin', 'sing-box.exe');
+
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-module.exports = { APP_ROOT, DATA_DIR, EXTENSIONS_DIR, TEMPLATE_DIR, isPacked };
+module.exports = { APP_ROOT, DATA_DIR, EXTENSIONS_DIR, TEMPLATE_DIR, SINGBOX_PATH, isPacked };

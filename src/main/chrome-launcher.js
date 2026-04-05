@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -91,7 +91,7 @@ class ChromeLauncher {
     fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2), 'utf-8');
   }
 
-  static launch(options) {
+  static async launch(options) {
     const chromePath = ChromeLauncher.findChrome();
     if (!chromePath) {
       throw new Error('未找到本机 Google Chrome，请确认已安装 Chrome 浏览器');
@@ -100,6 +100,7 @@ class ChromeLauncher {
     const {
       userDataDir,
       extensions = [],
+      proxy,
       windowSize,
       lang,
       startUrl = 'https://www.google.com',
@@ -124,6 +125,9 @@ class ChromeLauncher {
       ChromeLauncher.writePreferences(userDataDir, installed);
     }
 
+    killChromeByDataDir(userDataDir);
+    await sleep(1000);
+
     const loadPaths = validExtensions.join(',');
 
     const parts = [
@@ -135,6 +139,13 @@ class ChromeLauncher {
       '--disable-translate',
       '--enable-extensions',
     ];
+
+    if (proxy && proxy.type && proxy.type !== 'direct') {
+      const scheme = proxy.type === 'http' ? 'http' : 'socks5';
+      parts.push(`--proxy-server=${scheme}://${proxy.host}:${proxy.port}`);
+      parts.push('--force-webrtc-ip-handling-policy=disable_non_proxied_udp');
+      parts.push('--disable-features=WebRtcHideLocalIpsWithMdns');
+    }
 
     if (loadPaths) {
       parts.push(`--load-extension="${loadPaths}"`);
@@ -162,6 +173,30 @@ class ChromeLauncher {
       userDataDir,
     };
   }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function killChromeByDataDir(dataDir) {
+  try {
+    const needle = dataDir.toLowerCase();
+    const result = execSync(
+      'powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'chrome.exe\' } | Select-Object ProcessId, CommandLine | ConvertTo-Json"',
+      { encoding: 'utf-8', timeout: 8000 }
+    );
+    if (!result || !result.trim()) return;
+    let procs = JSON.parse(result.trim());
+    if (!Array.isArray(procs)) procs = [procs];
+
+    for (const p of procs) {
+      if (!p || !p.CommandLine) continue;
+      if (p.CommandLine.toLowerCase().includes(needle)) {
+        try { process.kill(p.ProcessId); } catch (_) {}
+      }
+    }
+  } catch (_) {}
 }
 
 function copyDirSync(src, dest) {

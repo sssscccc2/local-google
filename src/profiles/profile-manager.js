@@ -19,6 +19,7 @@ class ProfileManager {
       lastUsed: profile.lastUsed,
       platform: profile.fingerprint?.navigator?.platform || 'Unknown',
       userAgent: profile.fingerprint?.userAgent || '',
+      proxyNodeId: profile.proxyNodeId || null,
     }));
   }
 
@@ -35,7 +36,7 @@ class ProfileManager {
       createdAt: new Date().toISOString(),
       lastUsed: null,
       notes: data.notes || '',
-      proxy: data.proxy || null,
+      proxyNodeId: data.proxyNodeId || null,
       fingerprint,
     };
 

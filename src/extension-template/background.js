@@ -1,12 +1,15 @@
-async function applyHeaderRules() {
-  let config;
+async function loadConfig() {
   try {
     const resp = await fetch(chrome.runtime.getURL('config.json'));
-    config = await resp.json();
+    return await resp.json();
   } catch (e) {
     console.warn('Fingerprint config not found');
-    return;
+    return null;
   }
+}
+
+async function applyHeaderRules(config) {
+  if (!config) return;
 
   const requestHeaders = [];
 
@@ -51,12 +54,38 @@ async function applyHeaderRules() {
         condition: { urlFilter: '|http', resourceTypes: allTypes }
       }]
     });
-    console.log('Header rules applied');
+    console.log('[FG] Header rules applied');
   } catch (e) {
-    console.error('Failed to apply header rules:', e);
+    console.error('[FG] Failed to apply header rules:', e);
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => applyHeaderRules());
-chrome.runtime.onStartup.addListener(() => applyHeaderRules());
-applyHeaderRules();
+function setupProxyAuth(config) {
+  const proxy = config && config.proxy;
+  if (!proxy || !proxy.username) return;
+
+  chrome.webRequest.onAuthRequired.addListener(
+    (details, callback) => {
+      callback({
+        authCredentials: {
+          username: proxy.username,
+          password: proxy.password || ''
+        }
+      });
+    },
+    { urls: ['<all_urls>'] },
+    ['asyncBlocking']
+  );
+  console.log('[FG] Proxy auth handler registered');
+}
+
+async function init() {
+  const config = await loadConfig();
+  if (!config) return;
+  await applyHeaderRules(config);
+  setupProxyAuth(config);
+}
+
+chrome.runtime.onInstalled.addListener(() => init());
+chrome.runtime.onStartup.addListener(() => init());
+init();

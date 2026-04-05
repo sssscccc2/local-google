@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "download-ext": "node scripts/download-extension.js"
+    "download-ext": "node scripts/download-extension.js",
+    "download-singbox": "node scripts/download-singbox.js"
   },
   "dependencies": {
     "electron-store": "^10.0.0",
@@ -46,6 +47,11 @@
         "from": "src/extension-template",
         "to": "extension-template",
         "filter": ["**/*"]
+      },
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": ["sing-box.exe"]
       }
     ],
     "directories": {

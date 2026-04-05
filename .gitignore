@@ -1,6 +1,5 @@
 node_modules/
-data/
 dist/
-extensions/discord-token-login/
+data/
+bin/
 *.zip
-*.crx

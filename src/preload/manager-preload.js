@@ -10,4 +10,9 @@ contextBridge.exposeInMainWorld('api', {
   generateFingerprint: () => ipcRenderer.invoke('fingerprint:generate'),
   getPresets: () => ipcRenderer.invoke('fingerprint:presets'),
   getChromeStatus: () => ipcRenderer.invoke('chrome:status'),
+
+  listNodes: () => ipcRenderer.invoke('node:list'),
+  importNodes: (text) => ipcRenderer.invoke('node:import', text),
+  removeNode: (id) => ipcRenderer.invoke('node:remove', id),
+  clearNodes: () => ipcRenderer.invoke('node:clear'),
 });

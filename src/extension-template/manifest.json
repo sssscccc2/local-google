@@ -5,7 +5,10 @@
   "description": "Browser fingerprint protection",
   "permissions": [
     "declarativeNetRequest",
-    "storage"
+    "storage",
+    "proxy",
+    "webRequest",
+    "webRequestAuthProvider"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {

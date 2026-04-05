@@ -3,9 +3,11 @@ const $$ = (sel) => document.querySelectorAll(sel);
 
 let currentProfiles = [];
 let presets = [];
+let nodesList = [];
 
 async function init() {
   presets = await window.api.getPresets();
+  await refreshNodes();
   await refreshList();
   bindEvents();
 
@@ -29,6 +31,37 @@ function bindEvents() {
   $('#modal-overlay').addEventListener('click', (e) => {
     if (e.target === $('#modal-overlay')) closeModal();
   });
+
+  $('#btn-manage-nodes').addEventListener('click', openNodeModal);
+  $('#btn-node-modal-close').addEventListener('click', closeNodeModal);
+  $('#node-modal-overlay').addEventListener('click', (e) => {
+    if (e.target === $('#node-modal-overlay')) closeNodeModal();
+  });
+  $('#btn-import-nodes').addEventListener('click', handleImportNodes);
+  $('#btn-clear-nodes').addEventListener('click', handleClearNodes);
+}
+
+async function refreshNodes() {
+  try {
+    nodesList = await window.api.listNodes();
+  } catch {
+    nodesList = [];
+  }
+  populateNodeDropdown();
+}
+
+function populateNodeDropdown() {
+  const select = $('#select-proxy-node');
+  if (!select) return;
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">直连（不使用代理）</option>';
+  for (const node of nodesList) {
+    const opt = document.createElement('option');
+    opt.value = node.id;
+    opt.textContent = `[${node.type.toUpperCase()}] ${node.name} (${node.server}:${node.server_port})`;
+    select.appendChild(opt);
+  }
+  if (currentVal) select.value = currentVal;
 }
 
 async function refreshList() {
@@ -58,6 +91,13 @@ function renderProfiles() {
       ? new Date(p.createdAt).toLocaleDateString('zh-CN')
       : '';
 
+    const nodeId = p.proxyNodeId;
+    const nodeInfo = nodeId ? nodesList.find((n) => n.id === nodeId) : null;
+    const proxyLabel = nodeInfo
+      ? `${nodeInfo.type.toUpperCase()} ${nodeInfo.name}`
+      : '直连';
+    const proxyTag = nodeInfo ? 'proxy' : 'direct';
+
     return `
       <div class="profile-card" data-id="${p.id}">
         <div class="profile-card-header">
@@ -71,6 +111,10 @@ function renderProfiles() {
           <div class="profile-meta-row">
             <span class="profile-meta-label">平台</span>
             <span class="tag tag-${platform.tag}">${platform.label}</span>
+          </div>
+          <div class="profile-meta-row">
+            <span class="profile-meta-label">代理</span>
+            <span class="tag tag-${proxyTag}">${escapeHtml(proxyLabel)}</span>
           </div>
           <div class="profile-meta-row">
             <span class="profile-meta-label">UA</span>
@@ -117,6 +161,7 @@ function detectPlatform(platform) {
 function openModal(editData) {
   const modal = $('#modal-overlay');
   modal.classList.add('active');
+  populateNodeDropdown();
 
   if (editData) {
     $('#modal-title').textContent = '编辑配置';
@@ -145,6 +190,7 @@ function resetForm() {
   $('#input-webgl-vendor').value = '';
   $('#input-webgl-renderer').value = '';
   $('#edit-id').value = '';
+  $('#select-proxy-node').value = '';
 }
 
 async function fillRandom() {
@@ -187,6 +233,7 @@ async function fillFormFromProfile(profile) {
   if (profile.fingerprint) {
     populateFormFromFingerprint(profile.fingerprint);
   }
+  $('#select-proxy-node').value = profile.proxyNodeId || '';
 }
 
 function buildFingerprintFromForm() {
@@ -278,6 +325,7 @@ async function handleSave() {
   }
 
   const fingerprint = buildFingerprintFromForm();
+  const proxyNodeId = $('#select-proxy-node').value || null;
   const editId = $('#edit-id').value;
 
   try {
@@ -285,6 +333,7 @@ async function handleSave() {
       await window.api.updateProfile(editId, {
         name,
         notes: $('#input-notes').value,
+        proxyNodeId,
         fingerprint,
       });
       showToast('配置已更新', 'success');
@@ -292,6 +341,7 @@ async function handleSave() {
       await window.api.createProfile({
         name,
         notes: $('#input-notes').value,
+        proxyNodeId,
         fingerprint,
       });
       showToast('配置已创建', 'success');
@@ -305,6 +355,7 @@ async function handleSave() {
 
 async function handleLaunch(id) {
   try {
+    showToast('正在启动...', 'success');
     const result = await window.api.launchProfile(id);
     showToast('Chrome 已启动 (PID: ' + result.pid + ')', 'success');
   } catch (err) {
@@ -328,6 +379,80 @@ async function handleDelete(id) {
   } catch (err) {
     showToast(err.message || '删除失败', 'error');
   }
+}
+
+function openNodeModal() {
+  $('#node-modal-overlay').classList.add('active');
+  renderNodeList();
+}
+
+function closeNodeModal() {
+  $('#node-modal-overlay').classList.remove('active');
+  $('#input-node-links').value = '';
+  populateNodeDropdown();
+}
+
+async function handleImportNodes() {
+  const text = $('#input-node-links').value.trim();
+  if (!text) {
+    showToast('请粘贴代理链接', 'error');
+    return;
+  }
+
+  try {
+    const result = await window.api.importNodes(text);
+    showToast(`成功导入 ${result.length} 个节点`, 'success');
+    $('#input-node-links').value = '';
+    await refreshNodes();
+    renderNodeList();
+  } catch (err) {
+    showToast(err.message || '导入失败', 'error');
+  }
+}
+
+async function handleClearNodes() {
+  if (!confirm('确定要清空所有节点吗？')) return;
+  try {
+    await window.api.clearNodes();
+    showToast('已清空所有节点', 'success');
+    await refreshNodes();
+    renderNodeList();
+  } catch (err) {
+    showToast(err.message || '清空失败', 'error');
+  }
+}
+
+function renderNodeList() {
+  const container = $('#node-list');
+  if (nodesList.length === 0) {
+    container.innerHTML = '<div class="node-empty">暂无节点，请粘贴链接导入</div>';
+    return;
+  }
+
+  container.innerHTML = nodesList.map((node) => `
+    <div class="node-item" data-id="${node.id}">
+      <div class="node-info">
+        <span class="node-type tag tag-proxy">${escapeHtml(node.type.toUpperCase())}</span>
+        <span class="node-name">${escapeHtml(node.name)}</span>
+        <span class="node-addr">${escapeHtml(node.server)}:${node.server_port}</span>
+      </div>
+      <button class="btn-icon btn-node-delete" data-id="${node.id}" title="删除">&#128465;</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.btn-node-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await window.api.removeNode(btn.dataset.id);
+        await refreshNodes();
+        renderNodeList();
+        showToast('节点已删除', 'success');
+      } catch (err) {
+        showToast(err.message || '删除失败', 'error');
+      }
+    });
+  });
 }
 
 function showToast(message, type = 'success') {

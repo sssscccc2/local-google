@@ -3,7 +3,7 @@ const path = require('path');
 const { TEMPLATE_DIR } = require('./paths');
 
 class ExtensionBuilder {
-  static build(targetDir, fingerprint) {
+  static build(targetDir, fingerprint, proxy) {
     fs.mkdirSync(targetDir, { recursive: true });
 
     const templateFiles = ['manifest.json', 'background.js', 'inject.js'];
@@ -11,13 +11,22 @@ class ExtensionBuilder {
       fs.copyFileSync(path.join(TEMPLATE_DIR, file), path.join(targetDir, file));
     }
 
+    const config = { ...fingerprint };
+    if (proxy && proxy.type && proxy.type !== 'direct') {
+      config.proxy = proxy;
+    }
+
     fs.writeFileSync(
       path.join(targetDir, 'config.json'),
-      JSON.stringify(fingerprint, null, 2),
+      JSON.stringify(config, null, 2),
       'utf-8'
     );
 
-    const spoofCode = ExtensionBuilder.generateSpoofScript(fingerprint);
+    const fpWithProxy = { ...fingerprint };
+    if (proxy && proxy.type && proxy.type !== 'direct') {
+      fpWithProxy.proxy = { type: proxy.type };
+    }
+    const spoofCode = ExtensionBuilder.generateSpoofScript(fpWithProxy);
     fs.writeFileSync(path.join(targetDir, 'spoof.js'), spoofCode, 'utf-8');
   }
 
@@ -117,7 +126,16 @@ Intl.DateTimeFormat.prototype.resolvedOptions=function(){var r=_ro.call(this);r.
 
 /* ---- WebRTC ---- */
 if(C.webrtc){
-if(C.webrtc.mode==='disabled'){window.RTCPeerConnection=undefined;if(window.webkitRTCPeerConnection)window.webkitRTCPeerConnection=undefined}
+var useProxy=C.proxy&&C.proxy.type&&C.proxy.type!=='direct';
+if(C.webrtc.mode==='disabled'||useProxy){
+window.RTCPeerConnection=function(){throw new DOMException('RTCPeerConnection blocked','NotAllowedError')};
+window.RTCPeerConnection.prototype={};
+if(window.webkitRTCPeerConnection)window.webkitRTCPeerConnection=window.RTCPeerConnection;
+if(typeof navigator!=='undefined'&&navigator.mediaDevices){
+var _gum=navigator.mediaDevices.getUserMedia;
+navigator.mediaDevices.getUserMedia=function(c){if(c&&!c.audio&&!c.video)return Promise.reject(new DOMException('Blocked','NotAllowedError'));return _gum.call(navigator.mediaDevices,c)};
+}
+}
 else if(C.webrtc.mode==='disable_non_proxied_udp'&&typeof RTCPeerConnection!=='undefined'){
 var _RTC=RTCPeerConnection;
 window.RTCPeerConnection=function(cfg,con){

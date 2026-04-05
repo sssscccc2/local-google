@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Token Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Animated background -->
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+    
+    <!-- Glass card -->
+    <div class="card">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo-container">
+          <i class="fa-brands fa-discord discord-logo"></i>
+        </div>
+        <h1 class="title">Token Login</h1>
+        <p class="subtitle">Login to your account with token</p>
+      </div>
+      
+      <!-- Token input section -->
+      <div class="input-section">
+        <div class="input-wrapper">
+          <i class="fa-solid fa-key input-icon"></i>
+          <input type="password" id="tokenInput" class="token-input" placeholder="Enter your Discord token..." autocomplete="off">
+          <button id="toggleVisibility" class="visibility-toggle" title="Show/Hide token">
+            <i class="fa-solid fa-eye eye-icon"></i>
+            <i class="fa-solid fa-eye-slash eye-off-icon hidden"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Token Info Preview -->
+      <div id="tokenInfo" class="token-info-card hidden">
+        <div class="token-info-loading hidden">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>Checking token...</span>
+        </div>
+        <div class="token-info-content hidden">
+          <div class="token-user-header">
+            <img id="tokenAvatar" class="token-user-avatar" src="" alt="Avatar">
+            <div class="token-user-details">
+              <div class="token-display-name">
+                <span id="tokenDisplayName">Display Name</span>
+                <span id="tokenBadges" class="token-badges"></span>
+              </div>
+              <div class="token-username-handle">
+                <i class="fa-solid fa-at"></i>
+                <span id="tokenUsername">username</span>
+              </div>
+              <div class="token-user-id">
+                <i class="fa-solid fa-hashtag"></i>
+                <span id="tokenUserId">000000000000000000</span>
+                <button class="copy-id-btn" title="Copy ID">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="token-info-stats">
+            <div class="token-stat">
+              <i class="fa-solid fa-calendar-plus"></i>
+              <div class="token-stat-content">
+                <span class="token-stat-label">Created</span>
+                <span id="tokenCreated" class="token-stat-value">Jan 1, 2020</span>
+              </div>
+            </div>
+            <div class="token-stat">
+              <i class="fa-solid fa-envelope"></i>
+              <div class="token-stat-content">
+                <span class="token-stat-label">Email</span>
+                <span id="tokenEmail" class="token-stat-value">***@***.com</span>
+              </div>
+            </div>
+            <div class="token-stat">
+              <i class="fa-solid fa-phone"></i>
+              <div class="token-stat-content">
+                <span class="token-stat-label">Phone</span>
+                <span id="tokenPhone" class="token-stat-value">Not linked</span>
+              </div>
+            </div>
+            <div class="token-stat">
+              <i class="fa-solid fa-shield-halved"></i>
+              <div class="token-stat-content">
+                <span class="token-stat-label">2FA</span>
+                <span id="token2FA" class="token-stat-value">Disabled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="token-info-error hidden">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <div class="token-error-details">
+            <span class="token-error-title">Invalid Token</span>
+            <span id="tokenErrorMsg" class="token-error-msg">This token is invalid or expired</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="button-section">
+        <button id="loginBtn" class="btn btn-primary">
+          <i class="fa-solid fa-right-to-bracket btn-icon"></i>
+          <span>Login</span>
+        </button>
+        
+        <button id="saveBtn" class="btn btn-secondary">
+          <i class="fa-solid fa-floppy-disk btn-icon"></i>
+          <span>Save Token</span>
+        </button>
+      </div>
+      
+      <!-- Status message -->
+      <div id="statusMessage" class="status-message hidden">
+        <i class="status-icon"></i>
+        <span class="status-text"></span>
+      </div>
+      
+      <!-- Saved tokens section -->
+      <div class="saved-section">
+        <div class="saved-header">
+          <h3><i class="fa-solid fa-bookmark"></i> Saved Tokens</h3>
+          <button id="clearAllBtn" class="clear-all-btn" title="Clear all">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+        <div id="savedTokensList" class="saved-tokens-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-user-slash"></i>
+            <p>No saved tokens</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="footer">
+        <p><i class="fa-solid fa-triangle-exclamation"></i> Never share your token with anyone!</p>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
