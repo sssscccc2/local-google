@@ -1,4 +1,4 @@
-const { exec, execSync } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -130,41 +130,51 @@ class ChromeLauncher {
 
     const loadPaths = validExtensions.join(',');
 
-    const parts = [
-      `"${chromePath}"`,
-      `--user-data-dir="${userDataDir}"`,
+    const args = [
+      `--user-data-dir=${userDataDir}`,
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-sync',
       '--disable-translate',
       '--enable-extensions',
+      '--disable-background-networking',
+      '--disable-client-side-phishing-detection',
+      '--disable-domain-reliability',
+      '--disable-component-update',
+      '--disable-breakpad',
+      '--no-pings',
+      '--disable-ipc-flooding-protection',
+      '--disable-features=WebRtcHideLocalIpsWithMdns,OptimizationHints,MediaRouter,DialMediaRouteProvider,SafeBrowsingEnhancedProtection,DnsOverHttps,AsyncDns,Prerender2,SpeculationRules',
     ];
 
     if (proxy && proxy.type && proxy.type !== 'direct') {
       const scheme = proxy.type === 'http' ? 'http' : 'socks5';
-      parts.push(`--proxy-server=${scheme}://${proxy.host}:${proxy.port}`);
-      parts.push('--force-webrtc-ip-handling-policy=disable_non_proxied_udp');
-      parts.push('--disable-features=WebRtcHideLocalIpsWithMdns');
+      args.push(`--proxy-server=${scheme}://${proxy.host}:${proxy.port}`);
+      args.push('--proxy-bypass-list=<-loopback>');
+      args.push('--force-webrtc-ip-handling-policy=disable_non_proxied_udp');
     }
 
     if (loadPaths) {
-      parts.push(`--load-extension="${loadPaths}"`);
+      args.push(`--load-extension=${loadPaths}`);
     }
 
     if (windowSize) {
-      parts.push(`--window-size=${windowSize.width},${windowSize.height}`);
+      args.push(`--window-size=${windowSize.width},${windowSize.height}`);
     }
 
     if (lang) {
-      parts.push(`--lang=${lang}`);
+      args.push(`--lang=${lang}`);
     }
 
-    parts.push(`"${startUrl}"`);
+    args.push(startUrl);
 
-    const cmd = parts.join(' ');
-    console.log('[Chrome Launch]', cmd);
+    console.log('[Chrome Launch]', chromePath, args.join(' '));
 
-    const child = exec(cmd, { windowsHide: false });
+    const child = spawn(chromePath, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
     child.unref();
 
     return {

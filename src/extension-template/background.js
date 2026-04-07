@@ -12,6 +12,7 @@ async function applyHeaderRules(config) {
   if (!config) return;
 
   const requestHeaders = [];
+  const responseHeaders = [];
 
   if (config.userAgent) {
     requestHeaders.push({ header: 'User-Agent', operation: 'set', value: config.userAgent });
@@ -31,10 +32,23 @@ async function applyHeaderRules(config) {
     if (ch.model !== undefined) requestHeaders.push({ header: 'Sec-CH-UA-Model', operation: 'set', value: `"${ch.model}"` });
   }
 
-  requestHeaders.push({ header: 'DNT', operation: 'set', value: '1' });
-  requestHeaders.push({ header: 'Sec-GPC', operation: 'set', value: '1' });
+  const proxyLeakHeaders = [
+    'Via', 'X-Forwarded-For', 'X-Forwarded-Host', 'X-Forwarded-Proto',
+    'X-Real-IP', 'Forwarded', 'Proxy-Connection', 'X-Proxy-ID',
+    'X-Client-IP', 'Client-IP', 'CF-Connecting-IP'
+  ];
+  for (const h of proxyLeakHeaders) {
+    requestHeaders.push({ header: h, operation: 'remove' });
+  }
 
-  if (requestHeaders.length === 0) return;
+  requestHeaders.push({ header: 'DNT', operation: 'remove' });
+  requestHeaders.push({ header: 'Sec-GPC', operation: 'remove' });
+
+  for (const h of ['Via', 'X-Proxy-ID', 'Proxy-Connection', 'X-Powered-By']) {
+    responseHeaders.push({ header: h, operation: 'remove' });
+  }
+
+  if (requestHeaders.length === 0 && responseHeaders.length === 0) return;
 
   const allTypes = [
     'main_frame', 'sub_frame', 'stylesheet', 'script', 'image',
@@ -45,15 +59,25 @@ async function applyHeaderRules(config) {
     const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
     const removeRuleIds = existingRules.map(r => r.id);
 
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds,
-      addRules: [{
+    const rules = [];
+    if (requestHeaders.length > 0) {
+      rules.push({
         id: 1,
         priority: 1,
         action: { type: 'modifyHeaders', requestHeaders },
         condition: { urlFilter: '|http', resourceTypes: allTypes }
-      }]
-    });
+      });
+    }
+    if (responseHeaders.length > 0) {
+      rules.push({
+        id: 2,
+        priority: 1,
+        action: { type: 'modifyHeaders', responseHeaders },
+        condition: { urlFilter: '|http', resourceTypes: allTypes }
+      });
+    }
+
+    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules });
     console.log('[FG] Header rules applied');
   } catch (e) {
     console.error('[FG] Failed to apply header rules:', e);
